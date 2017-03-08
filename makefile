@@ -1,23 +1,25 @@
-TARGET = textflip
-LIBS = -lm
+LDFLAGS = -lm
 CC = gcc
 CFLAGS = -Wall -std=c99
 
 .PHONY: default all clean
 
-default: $(TARGET)
+default: textflip secded_test
 all: default
+
+UNAME := $(shell uname -s)
+ifeq ($(UNAME),Darwin)
+	CFLAGS += -D OSX
+endif
 
 OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
 HEADERS = $(wildcard *.h)
 
 %.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
 
-.PRECIOUS: $(TARGET) $(OBJECTS)
+textflip: textflip.o my_mem.o secded.o
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
+secded_test: secded_test.o my_mem.o secded.o
 
 clean:
 	-rm -f *.o

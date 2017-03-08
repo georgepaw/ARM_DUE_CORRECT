@@ -1,41 +1,5 @@
 #include "secded.h"
 
-#define __SECDED(in, out)        \
-  if(1) {                        \
-    const uint8_t bits[] =       \
-    {                            \
-      __builtin_parity(S1 & in), \
-      __builtin_parity(S2 & in), \
-      __builtin_parity(S3 & in), \
-      __builtin_parity(S4 & in), \
-      __builtin_parity(S5 & in), \
-      __builtin_parity(S6 & in), \
-      __builtin_parity(S7 & in), \
-      __builtin_parity(S8 & in)  \
-    };                           \
-    out = bits[0]                \
-        | bits[1] << 1           \
-        | bits[2] << 2           \
-        | bits[3] << 3           \
-        | bits[4] << 4           \
-        | bits[5] << 5           \
-        | bits[6] << 6           \
-        | bits[7] << 7;          \
-  } else
-
-#define __SECDED_CHECK(data_in, secded_in, out)               \
-  if(1) {                                                     \
-    out =                                                     \
-        __builtin_parity((S1 & data_in) ^ (secded_in & C1))   \
-      + __builtin_parity((S2 & data_in) ^ (secded_in & C2))   \
-      + __builtin_parity((S3 & data_in) ^ (secded_in & C3))   \
-      + __builtin_parity((S4 & data_in) ^ (secded_in & C4))   \
-      + __builtin_parity((S5 & data_in) ^ (secded_in & C5))   \
-      + __builtin_parity((S6 & data_in) ^ (secded_in & C6))   \
-      + __builtin_parity((S7 & data_in) ^ (secded_in & C7))   \
-      + __builtin_parity((S8 & data_in) ^ (secded_in & C8));  \
-  } else
-
 //Do standard (72,64) SECDED 
 void secded_start()
 {

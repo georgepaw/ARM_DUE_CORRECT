@@ -12,8 +12,13 @@
 
 #define INSTRUCTION_LEN 4
 
+#ifdef OSX
+char __executable_start;
+char __etext;
+#else
 extern char __executable_start;
 extern char __etext;
+#endif
 
 uint64_t reverse_nibbles(uint64_t x);
 uint32_t inject_bitflips();

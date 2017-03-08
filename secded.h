@@ -24,6 +24,42 @@
 #define C7 0x40
 #define C8 0x80
 
+#define __SECDED(in, out)        		\
+  if(1) {                        		\
+    const uint8_t bits[] =       		\
+    {                            		\
+      __builtin_parityll(S1 & in), 	\
+      __builtin_parityll(S2 & in), 	\
+      __builtin_parityll(S3 & in), 	\
+      __builtin_parityll(S4 & in), 	\
+      __builtin_parityll(S5 & in), 	\
+      __builtin_parityll(S6 & in), 	\
+      __builtin_parityll(S7 & in), 	\
+      __builtin_parityll(S8 & in)  	\
+    };                           		\
+    out = bits[0]                		\
+        | bits[1] << 1           		\
+        | bits[2] << 2           		\
+        | bits[3] << 3           		\
+        | bits[4] << 4           		\
+        | bits[5] << 5           		\
+        | bits[6] << 6           		\
+        | bits[7] << 7;          		\
+  } else
+
+#define __SECDED_CHECK(data_in, secded_in, out)               	\
+  if(1) {                                                     	\
+    out =                                                     	\
+        __builtin_parityll((S1 & data_in) ^ (secded_in & C1))		\
+      + __builtin_parityll((S2 & data_in) ^ (secded_in & C2)) 	\
+      + __builtin_parityll((S3 & data_in) ^ (secded_in & C3)) 	\
+      + __builtin_parityll((S4 & data_in) ^ (secded_in & C4)) 	\
+      + __builtin_parityll((S5 & data_in) ^ (secded_in & C5)) 	\
+      + __builtin_parityll((S6 & data_in) ^ (secded_in & C6)) 	\
+      + __builtin_parityll((S7 & data_in) ^ (secded_in & C7)) 	\
+      + __builtin_parityll((S8 & data_in) ^ (secded_in & C8));	\
+  } else
+
 uint8_t * __secded_data;
 
 void secded_start();
