@@ -1,16 +1,5 @@
 #include "my_mem.h"
 
-uint64_t reverse_nibbles(uint64_t x)
-{
-  uint64_t out = 0, i;
-  for(i = 0; i < 8; ++i)
-  {
-    const uint64_t byte = (x >> 8 * i) & 0xff;
-    out |= byte << (56 - 8 * i);
-  }
-  return out;
-}
-
 uint32_t randint(uint32_t n) {
   if ((n - 1) == RAND_MAX) {
     return rand();
@@ -33,7 +22,7 @@ uint32_t inject_bitflips()
 {
 	uint32_t corrupted = 0;
 	uint8_t old_instruction[4] = {0x40, 0x00, 0x80, 0x52};
-	uint8_t new_instruction[4] = {0x50, 0x00, 0x80, 0x52};
+	uint8_t new_instruction[4] = {0x80, 0x00, 0x80, 0x52};
 
   uint32_t bytes = (unsigned long)&__etext - (unsigned long)&__executable_start;
 
@@ -55,7 +44,6 @@ uint32_t inject_bitflips()
     }
   }
 
-  // __asm__ __volatile__("ic iallu\n\t" : : :"memory");
   return corrupted;
 }
 
@@ -70,7 +58,7 @@ uint32_t inject_bitflips_random(uint32_t bitflips)
   	uint32_t loc = randint(total_bits);
   	uint8_t mem;
   	memcpy(&mem, (uint8_t*)((unsigned long)&__executable_start + loc/8), sizeof(uint8_t));
-  	printf("At bit %u, was %u, ", loc, mem);
+  	printf("At instruction %lu, was %u, ", loc/8 - (unsigned long)&__executable_start, mem);
   	mem ^= 1 << (loc % 8);
   	printf("is %u now.\n", mem);
   	memcpy((uint8_t*)((unsigned long)&__executable_start + loc/8), &mem, sizeof(uint8_t));
@@ -88,6 +76,7 @@ void print_text_segment()
     uint8_t cbyte = *(uint8_t*)((unsigned long)&__executable_start + byte);
     printf("%02X", cbyte);
   }
+  printf("\n");
 }
 
 void change_text_protection()

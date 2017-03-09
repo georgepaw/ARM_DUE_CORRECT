@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include "my_mem.h"
 #include "secded.h"
 
@@ -10,8 +11,8 @@ int main(void)
 
   secded_start();
 
-  // printf("Corrupted %"PRIu32" instructions. \n", inject_bitflips());
-  printf("Corrupted %"PRIu32" instructions. \n", inject_bitflips_random(5));
+  printf("Corrupted %"PRIu32" instructions. \n", inject_bitflips());
+  // printf("Corrupted %"PRIu32" instructions. \n", inject_bitflips_random(5));
   // print_text_segment();
 
   printf("There were %"PRIu32" faulty SECDEDs.\n", secded_check_all());
