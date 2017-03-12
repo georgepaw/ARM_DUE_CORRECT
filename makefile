@@ -1,10 +1,10 @@
-LDFLAGS = -lm
+LDFLAGS =-L/nfs/home/george/gsl/lib -lgsl -lgslcblas -lm
 CC = gcc
-CFLAGS = -Wall -std=c99
+CFLAGS = -I/nfs/home/george/gsl/include -Wall -std=c99
 
 .PHONY: default all clean
 
-default: textflip secded_test
+default: textflip secded_test sample corrector
 all: default
 
 UNAME := $(shell uname -s)
@@ -20,6 +20,12 @@ HEADERS = $(wildcard *.h)
 textflip: textflip.o my_mem.o secded.o
 
 secded_test: secded_test.o my_mem.o secded.o
+
+sample: sample.o
+
+corrector: corrector.o secded_for_text.o secded.o instruction_secded.o fault_injector.o filter.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 
 clean:
 	-rm -f *.o

@@ -31,6 +31,10 @@
 #define C6 0x20U
 #define C7 0x40U
 
+#define WORD_SZIE 32
+#define SECDED_SIZE 7
+#define CODEWORD_SIZE 39
+
 #define __SECDED(in, out)        	\
   if(1) {                        	\
     const uint8_t bits[] =       	\
