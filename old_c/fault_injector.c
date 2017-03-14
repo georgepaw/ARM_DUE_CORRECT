@@ -1,7 +1,5 @@
 #include "fault_injector.h"
 
-
-
 uint64_t random_uint64_t(gsl_rng * r)
 {
 	//for now only return 32bits of randomness

@@ -1,10 +1,12 @@
-LDFLAGS =-L/nfs/home/george/gsl/lib -lgsl -lgslcblas -lm
+LDFLAGS =-lm
 CC = gcc
-CFLAGS = -I/nfs/home/george/gsl/include -Wall -std=c99
+CXX = g++
+CXXFLAGS =-std=c++11 -Wall
+CFLAGS =-I/nfs/home/george/gsl/include -Wall -std=c99
 
 .PHONY: default all clean
 
-default: textflip secded_test sample corrector
+default: corrector
 all: default
 
 UNAME := $(shell uname -s)
@@ -12,19 +14,20 @@ ifeq ($(UNAME),Darwin)
 	CFLAGS += -D OSX
 endif
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
-HEADERS = $(wildcard *.h)
+secded.o: secded.cc secded.hh
 
-%.o: %.c $(HEADERS)
+instruction_secded.o: instruction_secded.cc instruction_secded.hh
 
-textflip: textflip.o my_mem.o secded.o
+secded_for_text.o: secded_for_text.cc secded_for_text.hh
 
-secded_test: secded_test.o my_mem.o secded.o
+fault_injector.o: fault_injector.cc fault_injector.hh
 
-sample: sample.o
+filter.o: filter.cc filter.hh
 
-corrector: corrector.o secded_for_text.o secded.o instruction_secded.o fault_injector.o filter.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+corrector.o: corrector.cc
+
+corrector: corrector.o secded.o instruction_secded.o secded_for_text.o fault_injector.o filter.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 
 clean:

@@ -47,10 +47,15 @@ uint32_t check_secded(uint64_t num_instructions, instruction_secded * instructio
 			instruction_secded * valid_codewords = NULL;
 			uint32_t num_valid_codewords = reduce_to_valid_codewords(&instructions[i], &valid_codewords);
 			printf("There are %"PRIu32" valid codewords\n", num_valid_codewords);
-			print_text_and_secded(num_valid_codewords, valid_codewords);
+
+			instruction_secded * valid_instructions = NULL;
+			uint32_t num_valid_instructions = reduce_to_valid_instructions(num_valid_codewords, valid_codewords, &valid_instructions);
+			printf("There are %"PRIu32" valid instructions\n", num_valid_instructions);
 
 			free_instructions(num_valid_codewords, valid_codewords);
+			free_instructions(num_valid_instructions, valid_instructions);
 			free(valid_codewords);
+			free(valid_instructions);
 		}
 	}
 	return faulty;

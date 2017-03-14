@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 
 	inject_faults(r, 1, 2, num_instructions, instructions);
   check_secded(num_instructions, instructions);
-	// print_text_and_secded(num_instructions, instructions);
+	print_text_and_secded(num_instructions, instructions);
 
 	free_instructions(num_instructions, instructions);
 	free(instructions);

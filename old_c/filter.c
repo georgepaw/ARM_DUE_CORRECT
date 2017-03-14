@@ -41,3 +41,20 @@ uint32_t reduce_to_valid_codewords(instruction_secded * in, instruction_secded *
 	}
 	return candidates;
 }
+
+uint32_t reduce_to_valid_instructions(uint32_t num_valid_codewords, instruction_secded * valid_codewords, instruction_secded ** valid_instructions)
+{
+	uint32_t candidates = 0;
+
+	*valid_instructions = (instruction_secded*)malloc(sizeof(instruction_secded)*num_valid_codewords);
+	for(uint32_t i = 0; i < num_valid_codewords; i++)
+	{
+		if(1) //if instruction is valid
+		{
+			memcpy(&((*valid_instructions)[candidates]), &valid_codewords[i], sizeof(instruction_secded));
+			candidates++;
+		}
+	}
+	return candidates;
+}
+
