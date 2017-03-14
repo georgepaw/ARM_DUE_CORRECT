@@ -1,0 +1,3 @@
+[submodule "vixl"]
+	path = vixl
+	url = git@github.com:georgepaw/vixl.git
