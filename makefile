@@ -1,8 +1,8 @@
 LDFLAGS =-lm
-CC = gcc
-CXX = g++
+CC =gcc
+CXX =g++
 CXXFLAGS =-std=c++11 -Wall
-CFLAGS =-I/nfs/home/george/gsl/include -Wall -std=c99
+CFLAGS =-Wall -std=c99
 
 .PHONY: default all clean
 
