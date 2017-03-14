@@ -1,3 +1,0 @@
-[submodule "vixl"]
-	path = vixl
-	url = git@github.com:armvixl/vixl.git
