@@ -37,4 +37,4 @@
 *.su
 
 ._*
-
+.clang_complete
