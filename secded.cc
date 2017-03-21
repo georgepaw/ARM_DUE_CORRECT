@@ -7,18 +7,18 @@ SECDED::SECDED()
 
 SECDED::SECDED(uint32_t instruction)
 {
-	generate(instruction);
+  generate(instruction);
 }
 
 SECDED::SECDED(uint32_t instruction, uint8_t secded)
 {
-	this->instruction = instruction;
-	this->secded = secded;
+  this->instruction = instruction;
+  this->secded = secded;
 }
 
 void SECDED::generate(const uint32_t instruction)
 {
-	this->instruction = instruction;
+  this->instruction = instruction;
   this->secded =
       __builtin_parity(S1 & instruction)
     | __builtin_parity(S2 & instruction) << 1
@@ -31,7 +31,7 @@ void SECDED::generate(const uint32_t instruction)
 
 uint8_t SECDED::check()
 {
-	return
+  return
         __builtin_parity((S1 & this->instruction) ^ (this->secded & C1))
       | __builtin_parity((S2 & this->instruction) ^ (this->secded & C2)) << 1
       | __builtin_parity((S3 & this->instruction) ^ (this->secded & C3)) << 2
@@ -43,10 +43,9 @@ uint8_t SECDED::check()
 
 SECDED SECDED::clone()
 {
-	return SECDED(this->instruction, this->secded);
+  return SECDED(this->instruction, this->secded);
 }
 
-SECDED::~SECDED()
-{
-
+bool SECDED::operator==(const SECDED& other) {
+  return instruction == other.instruction && secded == other.secded;
 }

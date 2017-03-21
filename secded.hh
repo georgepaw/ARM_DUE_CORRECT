@@ -31,9 +31,10 @@ public:
   SECDED();
   SECDED(uint32_t instruction);
   SECDED(uint32_t instruction, uint8_t secded);
-  virtual ~SECDED();
 
   void generate(uint32_t instruction);
   uint8_t check();
   SECDED clone();
+
+  bool operator==(const SECDED& other);
 };
