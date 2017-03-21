@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
 
   std::vector<ASM_Function> functions = SECDED_for_text::generate_secded_for_text(argv[1]);
   // SECDED_for_text::print_text_and_secded(&instructions);
+  SECDED_for_text::print_text_and_secded(&functions);
 
   fault_injector::inject_faults(1, 2, &functions);
   uint64_t faulty_instructions = SECDED_for_text::check_secded(&functions);
