@@ -15,5 +15,4 @@
 namespace elf_extractor
 {
   std::vector<ASM_Function> extract_functions(const char * filename);
-  std::string exec_function(const char* cmd);
 }

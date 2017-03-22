@@ -13,6 +13,6 @@
 
 namespace filter
 {
-  std::vector<SECDED> reduce_to_valid_codewords(SECDED * in);
+  std::vector<SECDED> reduce_to_valid_codewords(SECDED in);
   std::vector<SECDED> reduce_to_valid_instructions(Instruction_SECDED * invalid_instruction, std::vector<SECDED> * valid_codewords);
 }

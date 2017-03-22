@@ -16,12 +16,16 @@ public:
   std::string to_string();
   uint32_t inject_fault(uint8_t location);
   bool is_directive();
+  SECDED secded();
+  uint64_t offset();
+  std::set<uint8_t> faults_locations();
+  SECDED original_secded();
 
-//this should be private
-  SECDED secded;
-  uint64_t offset;
-  std::set<uint8_t> faults_locations;
-  SECDED original_secded;
+private:
+  SECDED _secded;
+  uint64_t _offset;
+  std::set<uint8_t> _faults_locations;
+  SECDED _original_secded;
   bool _is_directive;
 
 };

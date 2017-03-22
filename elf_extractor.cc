@@ -31,6 +31,19 @@ namespace elf_extractor
     }
     return function;
   }
+  
+  std::string exec_function(const char* cmd)
+  {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+    if (!pipe) throw std::runtime_error("popen() failed!");
+    while (!feof(pipe.get())) {
+      if (fgets(buffer.data(), 128, pipe.get()) != NULL)
+        result += buffer.data();
+    }
+    return result;
+  }
 
   std::vector<ASM_Function> extract_functions(const char * filename)
   {
@@ -65,18 +78,5 @@ namespace elf_extractor
       }
     }
     return functions;
-  }
-
-  std::string exec_function(const char* cmd)
-  {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) throw std::runtime_error("popen() failed!");
-    while (!feof(pipe.get())) {
-      if (fgets(buffer.data(), 128, pipe.get()) != NULL)
-        result += buffer.data();
-    }
-    return result;
   }
 }

@@ -14,24 +14,23 @@ namespace SECDED_for_text
 
     for (ASM_Function function : functions)
     {
-      std::cout << "Function " << function.get_func_name() << " " << " in section " << function.get_section_name() << std::endl;
-      for(Instruction_SECDED instruction: *(function.get_instructions()))
+      for(Instruction_SECDED instruction: *(function.instructions()))
       {
         if(instruction.is_directive()) continue;
-        inst.SetInstructionBits(instruction.secded.instruction);
+        inst.SetInstructionBits(instruction.secded().instruction);
         decoder.Decode(&inst);
         std::string disassm_out = disassm.GetOutput();
-        std::cout << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded.instruction << " " << disassm.GetOutput() << std::endl;
+        // std::cout << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << " " << disassm.GetOutput() << std::endl;
         std::string unallocated = "unallocated";
         if (disassm_out.find(unallocated) != std::string::npos) {
           std::cout << "Failed to correctly identify the instruction (unallocated)" << " "
-                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded.instruction << std::endl;
+                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << std::endl;
           exit(-1);
         }
         std::string unimplemented = "unimplemented";
         if (disassm_out.find(unimplemented) != std::string::npos) {
           std::cout << "Failed to correctly identify the instruction (unimplemented)" << " "
-                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded.instruction << std::endl;
+                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << std::endl;
           exit(-1);
         }
       }
@@ -45,16 +44,16 @@ namespace SECDED_for_text
     uint64_t faulty = 0;
     for (ASM_Function &function : *functions)
     {
-      for(uint64_t i = 0; i < function.get_num_instructions(); i++)
+      for(uint64_t i = 0; i < function.num_instructions(); i++)
       {
-        Instruction_SECDED * instruction = &(*(function.get_instructions()))[i];
-        if((*instruction).secded.check())
+        Instruction_SECDED * instruction = &(*(function.instructions()))[i];
+        if((*instruction).secded().check())
         {
-          std::cout << "Faulty Instruction " << i << " in function " << function.get_func_name() << std::endl;
+          std::cout << "Faulty Instruction " << i << " in function " << function.func_name() << std::endl;
           std::cout << (*instruction).to_string();
           faulty++;
 
-          std::vector<SECDED> valid_codewords = filter::reduce_to_valid_codewords(&((*instruction).secded));
+          std::vector<SECDED> valid_codewords = filter::reduce_to_valid_codewords((*instruction).secded());
           std::cout << "There are " << std::dec << valid_codewords.size() << " valid codewords" << std::endl;
 
           // for(SECDED i : valid_codewords)
@@ -68,7 +67,7 @@ namespace SECDED_for_text
 
           if(valid_instructions.size() == 1)
           {
-            if(valid_instructions[0] == (*instruction).original_secded)
+            if(valid_instructions[0] == (*instruction).original_secded())
             {
               std::cout << "Successfuly corrected instructions." << std::endl;
             }

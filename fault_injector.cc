@@ -7,6 +7,7 @@ namespace fault_injector
     std::mt19937 rng;
     rng.seed(std::random_device()());
     std::uniform_int_distribution<std::mt19937::result_type> dist(0, CODEWORD_SIZE - 1);
+    std::set<uint8_t> indexes = (*inst).faults_locations();
     for(uint32_t i = 0; i < num_bitflips; i++)
     {
       uint8_t index = 0;
@@ -14,7 +15,8 @@ namespace fault_injector
       do
       {
         index = dist(rng);
-      } while((std::find((*inst).faults_locations.begin(), (*inst).faults_locations.end(), index) != (*inst).faults_locations.end()));
+      } while((std::find(indexes.begin(), indexes.end(), index) != indexes.end()));
+      indexes.insert(index);
       (*inst).inject_fault(index);
     }
     return num_bitflips;
@@ -29,9 +31,9 @@ namespace fault_injector
     uint64_t num_instruction = 0;
     for(ASM_Function function : (*functions))
     {
-      if(function.get_section_name() == ".text")
+      if(function.section_name() == ".text")
       {
-        num_instruction += function.get_num_non_directive_instruction_offsets();
+        num_instruction += function.num_non_directive_instruction_offsets();
       }
     }
 
@@ -52,16 +54,16 @@ namespace fault_injector
 
       for(ASM_Function &function : (*functions))
       {
-        if(function.get_section_name() != ".text") continue;
+        if(function.section_name() != ".text") continue;
 
-        if(index < function.get_num_non_directive_instruction_offsets())
+        if(index < function.num_non_directive_instruction_offsets())
         {
-          uint64_t adjusted_index = (*(function.get_non_directive_instruction_offsets()))[index];
-          std::cout << "Injecting at " << std::dec << adjusted_index << " in fuction " << function.get_func_name() << std::endl;
-          counter += inject_fault(bitflips_per_instruction, &((*(function.get_instructions()))[adjusted_index]));
+          uint64_t adjusted_index = (*(function.non_directive_instruction_offsets()))[index];
+          std::cout << "Injecting at " << std::dec << adjusted_index << " in fuction " << function.func_name() << std::endl;
+          counter += inject_fault(bitflips_per_instruction, &((*(function.instructions()))[adjusted_index]));
           break;
         }
-        index -= function.get_num_non_directive_instruction_offsets();
+        index -= function.num_non_directive_instruction_offsets();
       }
     }
     return counter;
