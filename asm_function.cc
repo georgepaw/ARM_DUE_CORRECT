@@ -57,12 +57,27 @@ uint64_t ASM_Function::num_non_directive_instruction_offsets()
 std::string ASM_Function::to_string()
 {
   std::stringstream ss;
+  vixl::Disassembler disassm;
+  vixl::Decoder decoder;
+  vixl::Instruction i;
+
+  decoder.AppendVisitor(&disassm);
   ss << "Function " << _func_name << " (" << "0x" << std::setfill('0') << std::setw(16) << std::hex << _start_address <<") in section " << _section_name << std::endl;
   for(Instruction_SECDED inst : _instructions)
   {
-    ss << "0x" << std::setfill('0') << std::setw(16) << std::hex << inst.offset() << ": " 
-       << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)inst.secded().secded << " "
-       << "0x" << std::setfill('0') << std::setw(8) << std::hex << inst.secded().instruction << std::endl;
+    disassm.MapCodeAddress(inst.offset(), &i);
+    i.SetInstructionBits(inst.secded().instruction);
+    decoder.Decode(&i);
+    std::string disassm_out = disassm.GetOutput();
+    // ss << "0x" << std::setfill('0') << std::setw(16) << std::hex << inst.offset() << ": " 
+    //    << "0x" << std::setfill('0') << std::setw(8) << std::hex << inst.secded().instruction << " "
+    //    << (inst.is_directive() ? "(directive)" :  disassm_out) << std::endl;
+    ss << "  " << std::setfill('0') << std::setw(6) << std::hex << inst.offset() << ": "
+       << std::setfill('0') << std::setw(8) << std::hex << inst.secded().instruction << "  "
+       << (inst.is_directive() ? "(directive)" :  disassm_out) << " "
+       << "(0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)inst.secded().secded << ")" << std::endl;
+    // std::cout << ss.str();
+    // exit(-1);
   }
   return ss.str();
 }

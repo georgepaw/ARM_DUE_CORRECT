@@ -6,6 +6,8 @@
 #include <iostream>
 #include "secded.hh"
 #include "instruction_secded.hh"
+#include "vixl/src/vixl/a64/disasm-a64.h"
+#include "vixl/src/vixl/a64/instructions-a64.h"
 
 class ASM_Function
 {

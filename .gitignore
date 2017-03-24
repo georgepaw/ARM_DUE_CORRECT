@@ -36,5 +36,8 @@
 *.dSYM/
 *.su
 
+# Dependency files
+*.d
+
 ._*
 .clang_complete

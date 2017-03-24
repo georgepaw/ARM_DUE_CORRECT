@@ -1,13 +1,19 @@
 LDFLAGS=-lm
 CC=gcc
 CXX=g++
-CXXFLAGS=-std=c++11 -Wall -Ivixl/src
+CXXFLAGS=-std=c++11 -Wall -Ivixl/src -MD -MP
 CFLAGS=-Wall -std=c99
+
+TARGET:= corrector sample
+CORRECTOR_OBJS:= corrector.o secded.o instruction_secded.o secded_for_text.o fault_injector.o filter.o elf_extractor.o \
+	asm_function.o trainer.o\
+	vixl-disasm.o vixl-decoder.o vixl-instructions.o vixl-compiler-intrinsics.o vixl-utils.o
 
 .PHONY: default all clean
 
-default: corrector sample
+default: $(TARGET)
 all: default
+
 
 UNAME := $(shell uname -s)
 ifeq ($(UNAME),Darwin)
@@ -15,19 +21,8 @@ ifeq ($(UNAME),Darwin)
 	CXXFLAGS += -D OSX
 endif
 
-secded.o: secded.cc secded.hh
-
-instruction_secded.o: instruction_secded.cc instruction_secded.hh
-
-secded_for_text.o: secded_for_text.cc secded_for_text.hh
-
-fault_injector.o: fault_injector.cc fault_injector.hh
-
-filter.o: filter.cc filter.hh
-
-elf_extractor.o: elf_extractor.cc elf_extractor.hh
-
-asm_function.o: asm_function.cc asm_function.hh
+%.o: %.cc
+	$(CXX) -c $(CXXFLAGS) $*.cc -o $*.o
 
 vixl-decoder.o:	vixl/src/vixl/a64/decoder-a64.cc vixl/src/vixl/a64/decoder-a64.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -44,17 +39,17 @@ vixl-compiler-intrinsics.o:	vixl/src/vixl/compiler-intrinsics.cc vixl/src/vixl/c
 vixl-utils.o:	vixl/src/vixl/utils.cc vixl/src/vixl/utils.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-corrector.o: corrector.cc
+# corrector.o: corrector.cc
 
-corrector: corrector.o secded.o instruction_secded.o secded_for_text.o fault_injector.o filter.o elf_extractor.o \
-	asm_function.o \
-	vixl-disasm.o vixl-decoder.o vixl-instructions.o vixl-compiler-intrinsics.o vixl-utils.o
+corrector: $(CORRECTOR_OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 
 sample: sample.c
 
 
+-include $(CORRECTOR_OBJS:.o=.d)
+
 clean:
-	-rm -f *.o
+	-rm -f *.o *.d
 	-rm -f $(TARGET)
