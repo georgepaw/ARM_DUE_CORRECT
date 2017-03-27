@@ -7,16 +7,18 @@
 
 #include "asm_function.hh"
 #include "secded_for_text.hh"
+#include "filter.hh"
 #include "fault_injector.hh"
 #include "trainer.hh"
 
 void print_help_and_exit()
 {
-  std::cout << "Incorrect arguments: " << std::endl
+  std::cerr << "Incorrect arguments: " << std::endl
             << "\t-t <dirname>\tfor training where every file in directory will be used for training" << std::endl
             << "\t            \t(the directory has to be non-empty)" << std::endl
-            << "\t-c <filename>\tfor testing the corrector" << std::endl
-            << "\t             \t(the file has to exist)" << std::endl;
+            << "\t-c <filename> -t <type>\tfor testing the corrector" << std::endl
+            << "\t             \t(the file has to exist)" << std::endl
+            << "\t             \t(valid types are: random, freq)" << std::endl;
   exit(-1);
 }
 
@@ -79,16 +81,25 @@ int main(int argc, char *argv[])
       std::vector<std::string> filenames = listdir(directory);
       trainer::train(&filenames);
   }
-  else if(check_cmd_option_exists(argv, argv+argc, "-c"))
+  else if(check_cmd_option_exists(argv, argv+argc, "-c") && check_cmd_option_exists(argv, argv+argc, "-f"))
   {
     char* filename = get_cmd_option(argv, argv+argc, "-c");
     if(!filename || !file_exists(filename)) print_help_and_exit();
+
+    char* filter_name = get_cmd_option(argv, argv+argc, "-f");
+    if(!filter_name || !filter::valid_filter_type(filter_name)) print_help_and_exit();
+    filter::filter_type ft = filter::get_filter_type(filter_name);
     std::vector<ASM_Function> functions = SECDED_for_text::generate_secded_for_text(filename);
     // SECDED_for_text::print_text_and_secded(&functions);
 
     fault_injector::inject_faults(1, 2, &functions);
-    uint64_t faulty_instructions = SECDED_for_text::check_secded(&functions);
+    // uint64_t faulty_instructions =
+    SECDED_for_text::check_secded(&functions, ft);
     // std::cerr << "There are " << faulty_instructions << " faulty instructions." << std::endl;
+  }
+  else
+  {
+    print_help_and_exit();
   }
 
   return 0;

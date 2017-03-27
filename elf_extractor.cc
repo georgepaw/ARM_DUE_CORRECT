@@ -31,7 +31,7 @@ namespace elf_extractor
     }
     return function;
   }
-  
+
   std::string exec_function(const char* cmd)
   {
     std::array<char, 128> buffer;
@@ -77,6 +77,51 @@ namespace elf_extractor
         functions.push_back(extract_function(&iss, line, section_name));
       }
     }
+
+    //check all instructions are valid
+    vixl::Disassembler disassm;
+    vixl::Decoder decoder;
+    vixl::Instruction inst;
+
+    decoder.AppendVisitor(&disassm);
+
+    for (ASM_Function function : functions)
+    {
+      for(Instruction_SECDED instruction: *(function.instructions()))
+      {
+        if(instruction.is_directive()) continue;
+        disassm.MapCodeAddress(instruction.offset(), &inst);
+        inst.SetInstructionBits(instruction.secded().instruction);
+        decoder.Decode(&inst);
+        std::string disassm_out = disassm.GetOutput();
+        // std::cout << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << " " << disassm.GetOutput() << std::endl;
+        std::string unallocated = "unallocated";
+        if (disassm_out.find(unallocated) != std::string::npos) {
+          std::cerr << "Failed to correctly identify the instruction (unallocated)" << " "
+                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << std::endl;
+          exit(-1);
+        }
+        std::string unimplemented = "unimplemented";
+        if (disassm_out.find(unimplemented) != std::string::npos) {
+          std::cerr << "Failed to correctly identify the instruction (unimplemented)" << " "
+                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << std::endl;
+          exit(-1);
+        }
+
+        if(function.section_name() == ".text")
+        {
+          //use the filter to check that all instructions come out as valid
+          bool valid_instruction = filter::instruction_filter(&functions, instruction.secded(), disassm_out, &inst, NULL);
+          if (!valid_instruction) {
+            std::cerr << "The filter has failed to identify this instruction as valid " << " "
+                      << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << " "
+                      << "VIXL: " << disassm_out << std::endl;
+            exit(-1);
+          }
+        }
+      }
+    }
+
     return functions;
   }
 }

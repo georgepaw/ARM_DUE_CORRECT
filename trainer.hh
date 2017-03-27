@@ -14,6 +14,7 @@
 #include "asm_function.hh"
 #include "vixl/src/vixl/a64/disasm-a64.h"
 #include "vixl/src/vixl/a64/instructions-a64.h"
+#include <omp.h>
 
 #define PRIOR_FILE "prior.dat"
 

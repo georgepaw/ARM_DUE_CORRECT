@@ -2,6 +2,21 @@
 
 namespace filter
 {
+  bool valid_filter_type(std::string filter_name)
+  {
+    if(filter_name == "random") return true;
+    else if(filter_name == "freq") return true;
+    return false;
+  }
+
+  filter_type get_filter_type(std::string filter_name)
+  {
+    if(filter_name == "random") return filter_type::random;
+    else if(filter_name == "freq") return filter_type::freq;
+    return filter_type::unsupported;
+  }
+
+
   std::vector<SECDED> reduce_to_valid_codewords(SECDED in)
   {
     std::vector<SECDED> candidates;
@@ -29,7 +44,7 @@ namespace filter
           if(__builtin_popcount(instruction ^ invalid_instruction)
             + __builtin_popcount(secded ^ invalid_secded) != 2)
           {
-            printf("Something has gone wrong here\n");
+            std::cerr << "Something has gone wrong here." << std::endl;
             exit(-1);
           }
           candidates.push_back(candidate);
@@ -37,6 +52,47 @@ namespace filter
       }
     }
     return candidates;
+  }
+
+  bool instruction_filter(std::vector<ASM_Function> * functions, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction)
+  {
+    bool valid_instruction = true;
+
+
+    //further analysis
+    //if it is a branch instruction, check it branches to a valid address
+    if (disassm_out.find("(addr") != std::string::npos && (*inst).BranchType() != vixl::UnknownBranchType)
+    {
+      std::istringstream disass_iss(disassm_out);
+      std::vector<std::string> current_line_tokens{std::istream_iterator<std::string>{disass_iss}, std::istream_iterator<std::string>{}};
+      std::stringstream ss;
+
+      current_line_tokens.back().pop_back();
+      ss << std::hex << current_line_tokens.back();
+      uint64_t address;
+      ss >> address;
+      //check if it is an address to any instruction
+      valid_instruction = false;
+      for(uint32_t i = 0; i < (*functions).size(); i++)
+      {
+
+        if(i < (*functions).size() - 1
+          && !((*functions)[i].start_address() <= address && address < (*functions)[i + 1].start_address()))
+            continue;
+
+        ASM_Function function = (*functions)[i];
+        for(Instruction_SECDED i : *function.instructions())
+        {
+          if(i.offset() == address)
+          {
+            valid_instruction = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return valid_instruction;
   }
 
   std::vector<SECDED> reduce_to_valid_instructions(std::vector<ASM_Function> * functions, Instruction_SECDED * invalid_instruction, std::vector<SECDED> * valid_codewords)
@@ -58,55 +114,30 @@ namespace filter
       if (disassm_out.find("unallocated") != std::string::npos)
       {
         //this case should never happen
-        if((*invalid_instruction).original_secded().instruction == candidate.instruction)
-        {
-          std::cout << "Failed to correctly identify the instruction" << std::endl;
-          std::cout << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
-                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << std::endl;
-          exit(-1);
-        }
+        // if((*invalid_instruction).original_secded().instruction == candidate.instruction)
+        // {
+        //   std::cerr << "Failed to correctly identify the instruction" << std::endl;
+        //   std::cerr << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
+        //             << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << std::endl;
+        //   exit(-1);
+        // }
         continue;
       }
       if (disassm_out.find("unimplemented") != std::string::npos)
       {
         //this case should never happen
-        if((*invalid_instruction).original_secded().instruction == candidate.instruction)
-        {
-          std::cout << "Failed to correctly identify the instruction" << std::endl;
-          std::cout << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
-                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << std::endl;
-          exit(-1);
-        }
+        // if((*invalid_instruction).original_secded().instruction == candidate.instruction)
+        // {
+        //   std::cerr << "Failed to correctly identify the instruction" << std::endl;
+        //   std::cerr << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
+        //             << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << std::endl;
+        //   exit(-1);
+        // }
         continue;
       }
 
       bool valid_instruction = true;
-      //further analysis
-      //if it is a branch instruction, check it branches to a valid address
-      if (disassm_out.find("(addr") != std::string::npos && inst.BranchType() != vixl::UnknownBranchType)
-      {
-        std::istringstream disass_iss(disassm_out);
-        std::vector<std::string> current_line_tokens{std::istream_iterator<std::string>{disass_iss}, std::istream_iterator<std::string>{}};
-        std::stringstream ss;
-
-        current_line_tokens.back().pop_back();
-        ss << std::hex << current_line_tokens.back();
-        uint64_t address;
-        ss >> address;
-        //check if it is an address to any instruction
-        valid_instruction = false;
-        for(ASM_Function function : *functions)
-        {
-          for(Instruction_SECDED i : *function.instructions())
-          {
-            if(i.offset() == address)
-            {
-              valid_instruction = true;
-              break;
-            }
-          }
-        }
-      }
+      valid_instruction = instruction_filter(functions, candidate, disassm_out, &inst, invalid_instruction);
 
       std::cout << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
                 << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << " "
@@ -115,12 +146,23 @@ namespace filter
 
       if(!valid_instruction && (*invalid_instruction).original_secded().instruction == candidate.instruction)
       {
-        std::cout << "Instruction incorrectly identified as invalid!" << std::endl;
-        exit(-1);
+        std::cerr << "Instruction incorrectly identified as invalid!" << std::endl;
       }
 
       if(valid_instruction) candidates.push_back(candidate);
     }
+    return candidates;
+  }
+
+  std::vector<SECDED> reduce_random(std::vector<SECDED> * valid_instructions)
+  {
+    std::vector<SECDED> candidates;
+    std::mt19937 rng;
+    rng.seed(std::random_device()());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, (*valid_instructions).size() - 1);
+
+    candidates.push_back((*valid_instructions)[dist(rng)]);
+    std::cout << "Assuming " << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidates[0].instruction << std::endl;
     return candidates;
   }
 

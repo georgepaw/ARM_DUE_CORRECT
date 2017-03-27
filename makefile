@@ -1,7 +1,7 @@
-LDFLAGS=-lm
+LDFLAGS=-lm -fopenmp
 CC=gcc
 CXX=g++
-CXXFLAGS=-std=c++11 -Wall -Ivixl/src -MD -MP
+CXXFLAGS=-std=c++11 -Wall -Ivixl/src -MD -MP -O3 -fopenmp
 CFLAGS=-Wall -std=c99
 
 TARGET:= corrector sample

@@ -17,6 +17,6 @@
 namespace SECDED_for_text
 {
   std::vector<ASM_Function> generate_secded_for_text(const char * filename);
-  uint64_t check_secded(std::vector<ASM_Function>* functions);
+  uint64_t check_secded(std::vector<ASM_Function>* functions, filter::filter_type ft);
   void print_text_and_secded(std::vector<ASM_Function>* functions);
 }
