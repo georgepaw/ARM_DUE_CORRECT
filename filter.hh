@@ -12,6 +12,7 @@
 #include "asm_function.hh"
 #include "vixl/src/vixl/a64/disasm-a64.h"
 #include "vixl/src/vixl/a64/instructions-a64.h"
+#include "vixl/src/vixl/a64/instruction-features-a64.h"
 
 #include <string>
 
@@ -32,6 +33,5 @@ namespace filter
   std::vector<SECDED> reduce_to_valid_instructions(std::vector<ASM_Function> * functions, Instruction_SECDED * invalid_instruction, std::vector<SECDED> * valid_codewords);
   std::vector<SECDED> reduce_random(std::vector<SECDED> * valid_instructions);
   std::vector<SECDED> reduce_with_prior(std::vector<std::pair<std::string, uint64_t>> * prior_pairs,  std::vector<ASM_Function> * functions, Instruction_SECDED * invalid_instruction, std::vector<SECDED> * valid_instructions);
-  bool instruction_filter(std::vector<ASM_Function> * functions, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction);
-
+  bool check_instruction_valid(std::vector<ASM_Function> * functions, vixl::InstructionFeature * base_instruction_features, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction);
 }

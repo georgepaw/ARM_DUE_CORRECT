@@ -92,26 +92,12 @@ namespace elf_extractor
         if(instruction.is_directive()) continue;
         disassm.MapCodeAddress(instruction.offset(), &inst);
         inst.SetInstructionBits(instruction.secded().instruction);
-        decoder.Decode(&inst);
+        vixl::InstructionFeature * instruction_features = decoder.decode_and_get_features(&inst);
         std::string disassm_out = disassm.GetOutput();
-        // std::cout << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << " " << disassm.GetOutput() << std::endl;
-        std::string unallocated = "unallocated";
-        if (disassm_out.find(unallocated) != std::string::npos) {
-          std::cerr << "Failed to correctly identify the instruction (unallocated)" << " "
-                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << std::endl;
-          exit(-1);
-        }
-        std::string unimplemented = "unimplemented";
-        if (disassm_out.find(unimplemented) != std::string::npos) {
-          std::cerr << "Failed to correctly identify the instruction (unimplemented)" << " "
-                    << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << std::endl;
-          exit(-1);
-        }
-
         if(function.section_name() == ".text")
         {
           //use the filter to check that all instructions come out as valid
-          bool valid_instruction = filter::instruction_filter(&functions, instruction.secded(), disassm_out, &inst, NULL);
+          bool valid_instruction = filter::check_instruction_valid(&functions, instruction_features, instruction.secded(), disassm_out, &inst, NULL);
           if (!valid_instruction) {
             std::cerr << "The filter has failed to identify this instruction as valid " << " "
                       << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << " "

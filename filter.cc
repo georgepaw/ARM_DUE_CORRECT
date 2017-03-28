@@ -54,44 +54,116 @@ namespace filter
     return candidates;
   }
 
-  bool instruction_filter(std::vector<ASM_Function> * functions, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction)
+  bool check_instruction_valid(std::vector<ASM_Function> * functions, vixl::InstructionFeature * base_instruction_features, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction)
   {
     bool valid_instruction = true;
-
-
-    //further analysis
-    //if it is a branch instruction, check it branches to a valid address
-    if (disassm_out.find("(addr") != std::string::npos && (*inst).BranchType() != vixl::UnknownBranchType)
+    switch((*base_instruction_features).get_base_type())
     {
-      std::istringstream disass_iss(disassm_out);
-      std::vector<std::string> current_line_tokens{std::istream_iterator<std::string>{disass_iss}, std::istream_iterator<std::string>{}};
-      std::stringstream ss;
-
-      current_line_tokens.back().pop_back();
-      ss << std::hex << current_line_tokens.back();
-      uint64_t address;
-      ss >> address;
-      //check if it is an address to any instruction
-      valid_instruction = false;
-      for(uint32_t i = 0; i < (*functions).size(); i++)
+      case vixl::InstructionType::Unallocated:
       {
+        return false;
+        break;
+      }
+      case vixl::InstructionType::Unimplemented:
+      {
+        return false;
+        break;
+      }
+      case vixl::InstructionType::PCRelAddressing:
+      {
+        vixl::PCRelAddressingInstruction * instruction_features
+          = static_cast<vixl::PCRelAddressingInstruction*>(base_instruction_features);
+        break;
+      }
+      case vixl::InstructionType::AddSubImmediate:
+      {
+        vixl::AddSubImmediateInstruction * instruction_features
+          = static_cast<vixl::AddSubImmediateInstruction*>(base_instruction_features);
 
-        if(i < (*functions).size() - 1
-          && !((*functions)[i].start_address() <= address && address < (*functions)[i + 1].start_address()))
-            continue;
+        if((*instruction_features).get_type() == vixl::AddSubImmediateType::Unallocated) return false;
+        break;
+      }
+      case vixl::InstructionType::DataProcessing:
+      {
+        vixl::DataProcessingInstruction * instruction_features
+          = static_cast<vixl::DataProcessingInstruction*>(base_instruction_features);
 
-        ASM_Function function = (*functions)[i];
-        for(Instruction_SECDED i : *function.instructions())
+        if((*instruction_features).get_type() == vixl::DataProcessingType::Unallocated) return false;
+        break;
+      }
+      case vixl::InstructionType::Logical:
+      {
+        vixl::LogicalInstruction * instruction_features
+          = static_cast<vixl::LogicalInstruction*>(base_instruction_features);
+
+        if((*instruction_features).get_type() == vixl::LogicalType::Unallocated) return false;
+        break;
+      }
+      case vixl::InstructionType::BitfieldExtract:
+      {
+        vixl::BitfieldExtractInstruction * instruction_features
+          = static_cast<vixl::BitfieldExtractInstruction*>(base_instruction_features);
+
+        if((*instruction_features).get_type() == vixl::BitfieldExtractType::Unallocated) return false;
+        break;
+      }
+      case vixl::InstructionType::BranchSystemException:
+      {
+        vixl::BranchSystemExceptionInstruction * instruction_features
+          = static_cast<vixl::BranchSystemExceptionInstruction*>(base_instruction_features);
+
+        if((*instruction_features).get_type() == vixl::BranchSystemExceptionType::Unallocated) return false;
+
+        if (disassm_out.find("(addr") != std::string::npos && (*inst).BranchType() != vixl::UnknownBranchType)
         {
-          if(i.offset() == address)
+          std::istringstream disass_iss(disassm_out);
+          std::vector<std::string> current_line_tokens{std::istream_iterator<std::string>{disass_iss}, std::istream_iterator<std::string>{}};
+          std::stringstream ss;
+
+          current_line_tokens.back().pop_back();
+          ss << std::hex << current_line_tokens.back();
+          uint64_t address;
+          ss >> address;
+          //check if it is an address to any instruction
+          valid_instruction = false;
+          for(uint32_t i = 0; i < (*functions).size(); i++)
           {
-            valid_instruction = true;
-            break;
+
+            if(i < (*functions).size() - 1
+              && !((*functions)[i].start_address() <= address && address < (*functions)[i + 1].start_address()))
+                continue;
+
+            ASM_Function function = (*functions)[i];
+            for(Instruction_SECDED i : *function.instructions())
+            {
+              if(i.offset() == address)
+              {
+                valid_instruction = true;
+                break;
+              }
+            }
           }
         }
+        break;
+      }
+      case vixl::InstructionType::LoadStore:
+      {
+        vixl::LoadStoreInstruction * instruction_features
+          = static_cast<vixl::LoadStoreInstruction*>(base_instruction_features);
+
+        if((*instruction_features).get_type() == vixl::LoadStoreType::Unallocated
+        || (*instruction_features).get_type() == vixl::LoadStoreType::Unimplemented) return false;
+        break;
+      }
+      case vixl::InstructionType::FP:
+      {
+        vixl::FPInstruction * instruction_features
+          = static_cast<vixl::FPInstruction*>(base_instruction_features);
+
+        if((*instruction_features).get_type() == vixl::FPType::Unallocated) return false;
+        break;
       }
     }
-
     return valid_instruction;
   }
 
@@ -109,35 +181,50 @@ namespace filter
 
       disassm.MapCodeAddress((*invalid_instruction).offset(), &inst);
       inst.SetInstructionBits(candidate.instruction);
-      decoder.Decode(&inst);
-      std::string disassm_out = disassm.GetOutput();
-      if (disassm_out.find("unallocated") != std::string::npos)
-      {
-        //this case should never happen
-        // if((*invalid_instruction).original_secded().instruction == candidate.instruction)
-        // {
-        //   std::cerr << "Failed to correctly identify the instruction" << std::endl;
-        //   std::cerr << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
-        //             << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << std::endl;
-        //   exit(-1);
-        // }
-        continue;
-      }
-      if (disassm_out.find("unimplemented") != std::string::npos)
-      {
-        //this case should never happen
-        // if((*invalid_instruction).original_secded().instruction == candidate.instruction)
-        // {
-        //   std::cerr << "Failed to correctly identify the instruction" << std::endl;
-        //   std::cerr << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
-        //             << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << std::endl;
-        //   exit(-1);
-        // }
-        continue;
-      }
+      vixl::InstructionFeature * instruction_features = decoder.decode_and_get_features(&inst);
 
-      bool valid_instruction = true;
-      valid_instruction = instruction_filter(functions, candidate, disassm_out, &inst, invalid_instruction);
+      // if(instruction_features == NULL) std::cout << "Poop\n";
+
+      //   switch((*instruction_features).get_base_type())
+      //   {
+      //   case vixl::InstructionType::Unallocated:
+      //     std::cout << "Unallocated" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::Unimplemented:
+      //     std::cout << "Unimplemented" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::PCRelAddressing:
+      //     std::cout << "PCRelAddressing" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::AddSubImmediate:
+      //     std::cout << "AddSubImmediate" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::DataProcessing:
+      //     std::cout << "DataProcessing" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::Logical:
+      //     std::cout << "Logical" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::BitfieldExtract:
+      //     std::cout << "BitfieldExtract" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::BranchSystemException:
+      //     std::cout << "BranchSystemException" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::LoadStore:
+      //     std::cout << "LoadStore" << std::endl;
+      //     break;
+      //   case vixl::InstructionType::FP:
+      //     std::cout << "FP" << std::endl;
+      //     break;
+      //   }
+
+
+      std::string disassm_out = disassm.GetOutput();
+
+      bool valid_instruction = check_instruction_valid(functions, instruction_features, candidate, disassm_out, &inst, invalid_instruction);
+
+      // valid_instruction = instruction_filter(functions, candidate, disassm_out, &inst, invalid_instruction);
 
       std::cout << "instruction: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)candidate.secded << " "
                 << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidate.instruction << " "
