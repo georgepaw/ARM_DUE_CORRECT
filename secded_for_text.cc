@@ -11,47 +11,19 @@ namespace SECDED_for_text
 
   uint64_t check_secded(std::vector<ASM_Function>* functions, filter::filter_type ft)
   {
-    std::vector<std::pair<std::string, uint64_t>> pairs;
-    if(ft == filter::filter_type::freq)
-    {
-      //read prior in
-      std::ifstream prior_file(PRIOR_FILE);
-      if (prior_file.is_open())
-      {
-        std::string line;
-        while(getline(prior_file, line))
-        {
-          std::istringstream iss(line);
-          std::vector<std::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
-          std::pair<std::string, uint64_t> p;
-          std::stringstream ss;
-
-          p.first = tokens[0];
-          ss << tokens[1];
-          ss >> p.second;
-
-          pairs.push_back(p);
-
-        }
-        prior_file.close();
-    }
-
-    std::cout << "Prior loaded " << pairs.size() << std::endl;
-    }
-
     uint64_t faulty = 0;
     for (ASM_Function &function : *functions)
     {
       for(uint64_t i = 0; i < function.num_instructions(); i++)
       {
         Instruction_SECDED * instruction = &(*(function.instructions()))[i];
-        if((*instruction).secded().check())
+        if(instruction->secded().check())
         {
           std::cout << "Faulty Instruction " << i << " in function " << function.func_name() << std::endl;
-          std::cout << (*instruction).to_string();
+          std::cout << instruction->to_string();
           faulty++;
 
-          std::vector<SECDED> valid_codewords = filter::reduce_to_valid_codewords((*instruction).secded());
+          std::vector<SECDED> valid_codewords = filter::reduce_to_valid_codewords(instruction->secded());
           std::cout << "There are " << std::dec << valid_codewords.size() << " valid codewords" << std::endl;
 
           // for(SECDED i : valid_codewords)
@@ -68,11 +40,38 @@ namespace SECDED_for_text
           switch(ft)
           {
             case filter::filter_type::random:
+            {
               reduced_instructions = filter::reduce_random(&valid_instructions);
               break;
+            }
             case filter::filter_type::freq:
+            {
+              std::vector<std::pair<std::string, uint64_t>> pairs;
+              //read prior in
+              std::ifstream prior_file(PRIOR_FILE);
+              if (prior_file.is_open())
+              {
+                std::string line;
+                while(getline(prior_file, line))
+                {
+                  std::istringstream iss(line);
+                  std::vector<std::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+                  std::pair<std::string, uint64_t> p;
+                  std::stringstream ss;
+
+                  p.first = tokens[0];
+                  ss << tokens[1];
+                  ss >> p.second;
+
+                  pairs.push_back(p);
+
+                }
+                prior_file.close();
+              }
+              std::cout << "Prior loaded " << pairs.size() << std::endl;
               reduced_instructions = filter::reduce_with_prior(&pairs, functions, instruction, &valid_instructions);
               break;
+            }
             default:
               std::cerr << "This filter type is not supported at the moment" << std::endl;
               exit(-1);
@@ -82,7 +81,7 @@ namespace SECDED_for_text
 
           if(reduced_instructions.size() == 1)
           {
-            if(reduced_instructions[0] == (*instruction).original_secded())
+            if(reduced_instructions[0] == instruction->original_secded())
             {
               std::cout << "Successfuly corrected instruction." << std::endl;
             }

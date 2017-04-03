@@ -54,82 +54,47 @@ namespace filter
     return candidates;
   }
 
-  bool check_instruction_valid(std::vector<ASM_Function> * functions, vixl::InstructionFeature * base_instruction_features, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction)
+  bool check_instruction_valid(bool print, std::vector<ASM_Function> * functions, vixl::InstructionFeature * instruction_features, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction)
   {
     bool valid_instruction = true;
-    switch((*base_instruction_features).get_base_type())
+
+    if(instruction_features->get_type() == vixl::InstructionType::Unallocated
+      || instruction_features->get_type() == vixl::InstructionType::Unimplemented
+      || instruction_features->get_mnemonic() == UNIMPLEMENTED
+      || instruction_features->get_mnemonic() == UNALLOCATED) return false;
+
+    // if(print)
     {
-      case vixl::InstructionType::Unallocated:
+      std::cout << "Instruction: " << instruction_features->get_mnemonic() << std::endl;
+      for(vixl::InstOperand operand : instruction_features->get_operands())
       {
-        return false;
-        break;
+        std::cout << "Fields: ";
+        for(vixl::Field field : operand.get_fields())
+          if(field.get_type() != vixl::FieldType::Ignore) std::cout << "\"" << field.to_string() <<"\" ";
+        std::cout << std::endl;
       }
-      case vixl::InstructionType::Unimplemented:
-      {
-        return false;
-        break;
-      }
-      case vixl::InstructionType::PCRelAddressing:
-      {
-        vixl::PCRelAddressingInstruction * instruction_features
-          = static_cast<vixl::PCRelAddressingInstruction*>(base_instruction_features);
-        break;
-      }
-      case vixl::InstructionType::AddSubImmediate:
-      {
-        vixl::AddSubImmediateInstruction * instruction_features
-          = static_cast<vixl::AddSubImmediateInstruction*>(base_instruction_features);
+    }
 
-        if((*instruction_features).get_type() == vixl::AddSubImmediateType::Unallocated) return false;
-        break;
-      }
-      case vixl::InstructionType::DataProcessing:
+    switch(instruction_features->get_type())
+    {
+      case vixl::InstructionType::UnconditionalBranch:
+      case vixl::InstructionType::CompareBranch:
+      case vixl::InstructionType::TestBranch:
+      case vixl::InstructionType::ConditionalBranch:
       {
-        vixl::DataProcessingInstruction * instruction_features
-          = static_cast<vixl::DataProcessingInstruction*>(base_instruction_features);
-
-        if((*instruction_features).get_type() == vixl::DataProcessingType::Unallocated) return false;
-        break;
-      }
-      case vixl::InstructionType::Logical:
-      {
-        vixl::LogicalInstruction * instruction_features
-          = static_cast<vixl::LogicalInstruction*>(base_instruction_features);
-
-        if((*instruction_features).get_type() == vixl::LogicalType::Unallocated) return false;
-        break;
-      }
-      case vixl::InstructionType::BitfieldExtract:
-      {
-        vixl::BitfieldExtractInstruction * instruction_features
-          = static_cast<vixl::BitfieldExtractInstruction*>(base_instruction_features);
-
-        if((*instruction_features).get_type() == vixl::BitfieldExtractType::Unallocated) return false;
-        break;
-      }
-      case vixl::InstructionType::BranchSystemException:
-      {
-        vixl::BranchSystemExceptionInstruction * instruction_features
-          = static_cast<vixl::BranchSystemExceptionInstruction*>(base_instruction_features);
-
-        if((*instruction_features).get_type() == vixl::BranchSystemExceptionType::Unallocated) return false;
-
-        if (disassm_out.find("(addr") != std::string::npos && (*inst).BranchType() != vixl::UnknownBranchType)
+        if (instruction_features->get_operands()[0].has_field_of_type(vixl::FieldType::CodeRelativeCodeAddress))
         {
-          std::istringstream disass_iss(disassm_out);
-          std::vector<std::string> current_line_tokens{std::istream_iterator<std::string>{disass_iss}, std::istream_iterator<std::string>{}};
           std::stringstream ss;
 
-          current_line_tokens.back().pop_back();
-          ss << std::hex << current_line_tokens.back();
+          ss << std::hex << instruction_features->get_operands()[0].get_fields()[0].get_value();
           uint64_t address;
           ss >> address;
           //check if it is an address to any instruction
           valid_instruction = false;
-          for(uint32_t i = 0; i < (*functions).size(); i++)
+          for(uint32_t i = 0; i < functions->size(); i++)
           {
 
-            if(i < (*functions).size() - 1
+            if(i < functions->size() - 1
               && !((*functions)[i].start_address() <= address && address < (*functions)[i + 1].start_address()))
                 continue;
 
@@ -145,23 +110,8 @@ namespace filter
           }
         }
         break;
-      }
-      case vixl::InstructionType::LoadStore:
-      {
-        vixl::LoadStoreInstruction * instruction_features
-          = static_cast<vixl::LoadStoreInstruction*>(base_instruction_features);
-
-        if((*instruction_features).get_type() == vixl::LoadStoreType::Unallocated
-        || (*instruction_features).get_type() == vixl::LoadStoreType::Unimplemented) return false;
-        break;
-      }
-      case vixl::InstructionType::FP:
-      {
-        vixl::FPInstruction * instruction_features
-          = static_cast<vixl::FPInstruction*>(base_instruction_features);
-
-        if((*instruction_features).get_type() == vixl::FPType::Unallocated) return false;
-        break;
+      default:
+          break;
       }
     }
     return valid_instruction;
@@ -179,13 +129,13 @@ namespace filter
     for(SECDED candidate : *valid_codewords)
     {
 
-      disassm.MapCodeAddress((*invalid_instruction).offset(), &inst);
+      disassm.MapCodeAddress(invalid_instruction->offset(), &inst);
       inst.SetInstructionBits(candidate.instruction);
       vixl::InstructionFeature * instruction_features = decoder.decode_and_get_features(&inst);
 
       // if(instruction_features == NULL) std::cout << "Poop\n";
 
-      //   switch((*instruction_features).get_base_type())
+      //   switch(instruction_features->get_base_type())
       //   {
       //   case vixl::InstructionType::Unallocated:
       //     std::cout << "Unallocated" << std::endl;
@@ -222,7 +172,7 @@ namespace filter
 
       std::string disassm_out = disassm.GetOutput();
 
-      bool valid_instruction = check_instruction_valid(functions, instruction_features, candidate, disassm_out, &inst, invalid_instruction);
+      bool valid_instruction = check_instruction_valid(true, functions, instruction_features, candidate, disassm_out, &inst, invalid_instruction);
 
       // valid_instruction = instruction_filter(functions, candidate, disassm_out, &inst, invalid_instruction);
 
@@ -231,12 +181,13 @@ namespace filter
                 << "VIXL: " << disassm_out << " "
                 << "valid? " << valid_instruction << std::endl;
 
-      if(!valid_instruction && (*invalid_instruction).original_secded().instruction == candidate.instruction)
+      if(!valid_instruction && invalid_instruction->original_secded().instruction == candidate.instruction)
       {
         std::cerr << "Instruction incorrectly identified as invalid!" << std::endl;
       }
 
       if(valid_instruction) candidates.push_back(candidate);
+      delete instruction_features;
     }
     return candidates;
   }
@@ -246,7 +197,7 @@ namespace filter
     std::vector<SECDED> candidates;
     std::mt19937 rng;
     rng.seed(std::random_device()());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0, (*valid_instructions).size() - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, valid_instructions->size() - 1);
 
     candidates.push_back((*valid_instructions)[dist(rng)]);
     std::cout << "Assuming " << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidates[0].instruction << std::endl;
@@ -264,7 +215,7 @@ namespace filter
 
 
     //sort with smallest instruction first
-    std::sort((*valid_instructions).begin(), (*valid_instructions).end(), [](const SECDED& a, const SECDED& b)
+    std::sort(valid_instructions->begin(), valid_instructions->end(), [](const SECDED& a, const SECDED& b)
     {
       return a.instruction < b.instruction;
     });
@@ -272,7 +223,7 @@ namespace filter
     std::vector<std::string> candidates_mnemonics;
     for(SECDED candidate : *valid_instructions)
     {
-      disassm.MapCodeAddress((*invalid_instruction).offset(), &inst);
+      disassm.MapCodeAddress(invalid_instruction->offset(), &inst);
       inst.SetInstructionBits(candidate.instruction);
       decoder.Decode(&inst);
       std::istringstream disass_iss(disassm.GetOutput());
@@ -283,17 +234,18 @@ namespace filter
     for(std::pair<std::string, uint64_t> p : *prior_pairs)
     {
       bool match_found = false;
-      for(uint32_t i = 0 ; i < (*valid_instructions).size(); i++)
+      for(uint32_t i = 0 ; i < valid_instructions->size(); i++)
       {
         if(candidates_mnemonics[i] != p.first) continue;
         match_found = true;
         candidates.push_back((*valid_instructions)[i]);
 
 
-        disassm.MapCodeAddress((*invalid_instruction).offset(), &inst);
+        disassm.MapCodeAddress(invalid_instruction->offset(), &inst);
         inst.SetInstructionBits((*valid_instructions)[i].instruction);
         decoder.Decode(&inst);
-        std::cout << "Assuming " << disassm.GetOutput() << " is the correct instruction." << std::endl;
+            std::cout << "Assuming " << "0x" << std::setfill('0') << std::setw(8) << std::hex << candidates[0].instruction << " "
+                      << disassm.GetOutput() << " is the correct instruction." << std::endl;
         break;
       }
       if(match_found) break;

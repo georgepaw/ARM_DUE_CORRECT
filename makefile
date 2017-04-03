@@ -24,10 +24,10 @@ endif
 %.o: %.cc
 	$(CXX) -c $(CXXFLAGS) $*.cc -o $*.o
 
-vixl-decoder.o:	vixl/src/vixl/a64/decoder-a64.cc vixl/src/vixl/a64/decoder-a64.h
+vixl-decoder.o:	vixl/src/vixl/a64/decoder-a64.cc vixl/src/vixl/a64/decoder-a64.h vixl/src/vixl/a64/instruction-features-a64.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-vixl-disasm.o: vixl/src/vixl/a64/disasm-a64.cc vixl/src/vixl/a64/disasm-a64.h
+vixl-disasm.o: vixl/src/vixl/a64/disasm-a64.cc vixl/src/vixl/a64/disasm-a64.h vixl/src/vixl/a64/instruction-features-a64.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 vixl-instructions.o: vixl/src/vixl/a64/instructions-a64.cc vixl/src/vixl/a64/instructions-a64.h

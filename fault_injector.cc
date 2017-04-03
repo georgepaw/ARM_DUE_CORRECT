@@ -7,7 +7,7 @@ namespace fault_injector
     std::mt19937 rng;
     rng.seed(std::random_device()());
     std::uniform_int_distribution<std::mt19937::result_type> dist(0, CODEWORD_SIZE - 1);
-    std::set<uint8_t> indexes = (*inst).faults_locations();
+    std::set<uint8_t> indexes = inst->faults_locations();
     for(uint32_t i = 0; i < num_bitflips; i++)
     {
       uint8_t index = 0;
@@ -17,7 +17,7 @@ namespace fault_injector
         index = dist(rng);
       } while((std::find(indexes.begin(), indexes.end(), index) != indexes.end()));
       indexes.insert(index);
-      (*inst).inject_fault(index);
+      inst->inject_fault(index);
     }
     return num_bitflips;
   }

@@ -33,5 +33,5 @@ namespace filter
   std::vector<SECDED> reduce_to_valid_instructions(std::vector<ASM_Function> * functions, Instruction_SECDED * invalid_instruction, std::vector<SECDED> * valid_codewords);
   std::vector<SECDED> reduce_random(std::vector<SECDED> * valid_instructions);
   std::vector<SECDED> reduce_with_prior(std::vector<std::pair<std::string, uint64_t>> * prior_pairs,  std::vector<ASM_Function> * functions, Instruction_SECDED * invalid_instruction, std::vector<SECDED> * valid_instructions);
-  bool check_instruction_valid(std::vector<ASM_Function> * functions, vixl::InstructionFeature * base_instruction_features, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction);
+  bool check_instruction_valid(bool print, std::vector<ASM_Function> * functions, vixl::InstructionFeature * base_instruction_features, const SECDED candidate, const std::string disassm_out, vixl::Instruction * inst, Instruction_SECDED * invalid_instruction);
 }

@@ -21,7 +21,7 @@ namespace trainer
     decoder.AppendVisitor(&disassm);
 
     #pragma omp for schedule(dynamic)
-    for(uint32_t i = 0; i < (*filenames).size(); i++)
+    for(uint32_t i = 0; i < filenames->size(); i++)
     {
       std::string filename = (*filenames)[i];
       std::cout << "Extracting file (" << thread_num << ") " << filename << std::endl;
@@ -49,13 +49,13 @@ namespace trainer
   {
     for (auto itr = instruction_freq_threads[thread_num].begin(); itr != instruction_freq_threads[thread_num].end(); ++itr)
     {
-      if (instruction_freq_threads[thread_num].find((*itr).first) == instruction_freq_threads[thread_num].end())
+      if (instruction_freq_threads[thread_num].find(itr->first) == instruction_freq_threads[thread_num].end())
       {
-        instruction_freq[(*itr).first] = (*itr).second;
+        instruction_freq[itr->first] = itr->second;
       }
       else
       {
-        instruction_freq[(*itr).first] += (*itr).second;
+        instruction_freq[itr->first] += itr->second;
       }
     }
   }

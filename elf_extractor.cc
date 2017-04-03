@@ -97,7 +97,7 @@ namespace elf_extractor
         if(function.section_name() == ".text")
         {
           //use the filter to check that all instructions come out as valid
-          bool valid_instruction = filter::check_instruction_valid(&functions, instruction_features, instruction.secded(), disassm_out, &inst, NULL);
+          bool valid_instruction = filter::check_instruction_valid(false, &functions, instruction_features, instruction.secded(), disassm_out, &inst, NULL);
           if (!valid_instruction) {
             std::cerr << "The filter has failed to identify this instruction as valid " << " "
                       << "0x" << std::setfill('0') << std::setw(8) << std::hex << instruction.secded().instruction << " "
@@ -105,6 +105,7 @@ namespace elf_extractor
             exit(-1);
           }
         }
+        delete instruction_features;
       }
     }
 
