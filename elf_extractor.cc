@@ -45,12 +45,30 @@ namespace elf_extractor
     return result;
   }
 
-  std::vector<ASM_Function> extract_functions(const char * filename)
+  std::string read_file(const char * filename)
+  {
+    std::ifstream file(filename);
+
+    if (file)
+    {
+      std::stringstream buffer;
+      buffer << file.rdbuf();
+      file.close();
+      return buffer.str();
+    }
+    else
+    {
+      throw std::runtime_error("Failed to read file!");
+    }
+  }
+
+  std::vector<ASM_Function> extract_functions(const char * filename, bool is_elf)
   {
     //this function parses the output form objdump into functions
     std::vector<ASM_Function> functions;
     std::string command = "objdump -d -z " + std::string(filename);
-    std::string functions_string = exec_function(command.c_str());
+    std::string functions_string = is_elf ? exec_function(command.c_str())
+                                          : read_file(filename);
     std::istringstream iss(functions_string);
 
     std::string line;

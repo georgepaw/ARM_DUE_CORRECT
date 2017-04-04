@@ -4,7 +4,7 @@ namespace SECDED_for_text
 {
   std::vector<ASM_Function> generate_secded_for_text(const char * filename)
   {
-    std::vector<ASM_Function> functions = elf_extractor::extract_functions(filename);
+    std::vector<ASM_Function> functions = elf_extractor::extract_functions(filename, true);
 
     return functions;
   }

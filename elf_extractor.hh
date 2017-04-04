@@ -9,6 +9,7 @@
 #include <array>
 #include <iterator>
 #include <stdint.h>
+#include <fstream>
 #include "instruction_secded.hh"
 #include "asm_function.hh"
 #include "filter.hh"
@@ -18,5 +19,5 @@
 
 namespace elf_extractor
 {
-  std::vector<ASM_Function> extract_functions(const char * filename);
+  std::vector<ASM_Function> extract_functions(const char * filename, bool is_elf);
 }

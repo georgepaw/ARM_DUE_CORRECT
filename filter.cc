@@ -63,7 +63,7 @@ namespace filter
       || instruction_features->get_mnemonic() == UNIMPLEMENTED
       || instruction_features->get_mnemonic() == UNALLOCATED) return false;
 
-    // if(print)
+    if(print)
     {
       std::cout << "Instruction: " << instruction_features->get_mnemonic() << std::endl;
       for(vixl::InstOperand operand : instruction_features->get_operands())
@@ -110,7 +110,9 @@ namespace filter
           }
         }
         break;
+      }
       default:
+      {
           break;
       }
     }

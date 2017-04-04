@@ -25,7 +25,7 @@ namespace trainer
     {
       std::string filename = (*filenames)[i];
       std::cout << "Extracting file (" << thread_num << ") " << filename << std::endl;
-      std::vector<ASM_Function> functions = elf_extractor::extract_functions(filename.c_str());
+      std::vector<ASM_Function> functions = elf_extractor::extract_functions(filename.c_str(), false);
       for(ASM_Function function : functions)
       {
         for(Instruction_SECDED i : *function.instructions())
