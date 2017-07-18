@@ -1,12 +1,13 @@
-LDFLAGS=-lm -fopenmp
-CC=gcc
-CXX=g++
-CXXFLAGS=-std=c++11 -Wall -Ivixl/src -MD -MP -O3 -fopenmp
-CFLAGS=-Wall -std=c99
+LDFLAGS = -lm -fopenmp
+ARCH ?= native
+CC = gcc
+CXX = g++
+CXXFLAGS = -std=c++11 -Wall -Ivixl/src -MD -MP -O3 -fopenmp -march=$(ARCH)
+CFLAGS = -Wall -std=c99
 
 TARGET:= corrector sample
 CORRECTOR_OBJS:= corrector.o secded.o instruction_secded.o secded_for_text.o fault_injector.o filter.o elf_extractor.o \
-	asm_function.o trainer.o\
+	asm_function.o trainer.o crc32c.o program.o\
 	vixl-disasm.o vixl-decoder.o vixl-instructions.o vixl-compiler-intrinsics.o vixl-utils.o
 
 .PHONY: default all clean

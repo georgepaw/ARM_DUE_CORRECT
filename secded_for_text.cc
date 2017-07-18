@@ -9,10 +9,10 @@ namespace SECDED_for_text
     return functions;
   }
 
-  uint64_t check_secded(std::vector<ASM_Function>* functions, filter::filter_type ft)
+  uint64_t check_secded(Program * program, filter::filter_type ft)
   {
     uint64_t faulty = 0;
-    for (ASM_Function &function : *functions)
+    for (ASM_Function &function : program->functions)
     {
       for(uint64_t i = 0; i < function.num_instructions(); i++)
       {
@@ -23,7 +23,7 @@ namespace SECDED_for_text
           std::cout << instruction->to_string();
           faulty++;
 
-          std::vector<SECDED> valid_codewords = filter::reduce_to_valid_codewords(instruction->secded());
+          std::vector<SECDED> valid_codewords = filter::reduce_to_valid_codewords(instruction->offset(), instruction->get_crc_index(), program);
           std::cout << "There are " << std::dec << valid_codewords.size() << " valid codewords" << std::endl;
 
           // for(SECDED i : valid_codewords)
@@ -32,7 +32,7 @@ namespace SECDED_for_text
           //            << "0x" << std::setfill('0') << std::setw(8) << std::hex << i.instruction << std::endl;
           // }
 
-          std::vector<SECDED> valid_instructions = filter::reduce_to_valid_instructions(functions, instruction, &valid_codewords);
+          std::vector<SECDED> valid_instructions = filter::reduce_to_valid_instructions(&(program->functions), instruction, &valid_codewords);
           std::cout << "There are " << std::dec << valid_instructions.size() << " valid codewords" << std::endl;
 
           std::vector<SECDED> reduced_instructions;
@@ -69,7 +69,7 @@ namespace SECDED_for_text
                 prior_file.close();
               }
               std::cout << "Prior loaded " << pairs.size() << std::endl;
-              reduced_instructions = filter::reduce_with_prior(&pairs, functions, instruction, &valid_instructions);
+              reduced_instructions = filter::reduce_with_prior(&pairs, &(program->functions), instruction, &valid_instructions);
               break;
             }
             default:

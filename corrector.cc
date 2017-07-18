@@ -11,6 +11,8 @@
 #include "fault_injector.hh"
 #include "trainer.hh"
 
+#include "program.hh"
+
 void print_help_and_exit()
 {
   std::cerr << "Incorrect arguments: " << std::endl
@@ -73,7 +75,6 @@ bool check_cmd_option_exists(char** begin, char** end, const std::string& option
 
 int main(int argc, char *argv[])
 {
-
   if(check_cmd_option_exists(argv, argv+argc, "-t"))
   {
       char* directory = get_cmd_option(argv, argv+argc, "-t");
@@ -89,13 +90,15 @@ int main(int argc, char *argv[])
     char* filter_name = get_cmd_option(argv, argv+argc, "-f");
     if(!filter_name || !filter::valid_filter_type(filter_name)) print_help_and_exit();
     filter::filter_type ft = filter::get_filter_type(filter_name);
-    std::vector<ASM_Function> functions = SECDED_for_text::generate_secded_for_text(filename);
+
+    Program program(SECDED_for_text::generate_secded_for_text(filename));
     // SECDED_for_text::print_text_and_secded(&functions);
 
-    fault_injector::inject_faults(1, 2, &functions);
+    fault_injector::inject_faults(1, 2, &program);
     // uint64_t faulty_instructions =
-    SECDED_for_text::check_secded(&functions, ft);
+    SECDED_for_text::check_secded(&program, ft);
     // std::cerr << "There are " << faulty_instructions << " faulty instructions." << std::endl;
+    std::cout << "Finished" << std::endl;
   }
   else
   {

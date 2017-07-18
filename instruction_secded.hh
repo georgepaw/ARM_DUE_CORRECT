@@ -20,12 +20,14 @@ public:
   uint64_t offset();
   std::set<uint8_t> faults_locations();
   SECDED original_secded();
-
+  uint32_t get_crc_index() { return _crc_index; }
+  void set_crc_index(uint32_t crc_index) { _crc_index = crc_index; }
 private:
   SECDED _secded;
   uint64_t _offset;
   std::set<uint8_t> _faults_locations;
   SECDED _original_secded;
   bool _is_directive;
+  uint32_t _crc_index;
 
 };

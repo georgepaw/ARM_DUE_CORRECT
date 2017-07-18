@@ -2,11 +2,11 @@
 
 namespace fault_injector
 {
-  uint32_t inject_fault(uint32_t num_bitflips, Instruction_SECDED * inst)
+  uint32_t inject_fault(uint32_t num_bitflips, Instruction_SECDED * inst, CRC32C * crc)
   {
     std::mt19937 rng;
     rng.seed(std::random_device()());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0, CODEWORD_SIZE - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, 38);
     std::set<uint8_t> indexes = inst->faults_locations();
     for(uint32_t i = 0; i < num_bitflips; i++)
     {
@@ -17,19 +17,20 @@ namespace fault_injector
         index = dist(rng);
       } while((std::find(indexes.begin(), indexes.end(), index) != indexes.end()));
       indexes.insert(index);
-      inst->inject_fault(index);
+      if(index < 39) inst->inject_fault(index);
+      else crc->crc_checksum ^= 0x1 << (index - 39);
     }
     return num_bitflips;
   }
 
-  uint32_t inject_faults(uint32_t instructions_to_affect, uint32_t bitflips_per_instruction, std::vector<ASM_Function>* functions)
+  uint32_t inject_faults(uint32_t instructions_to_affect, uint32_t bitflips_per_instruction, Program* program)
   {
     uint32_t counter = 0;
     std::set<uint64_t> indexes;
 
     //only inject faults in text section and don't inject faults in directives
     uint64_t num_instruction = 0;
-    for(ASM_Function function : (*functions))
+    for(ASM_Function function : program->functions)
     {
       if(function.section_name() == ".text")
       {
@@ -52,7 +53,7 @@ namespace fault_injector
       } while((std::find(indexes.begin(), indexes.end(), index) != indexes.end()));
       indexes.insert(index);
 
-      for(ASM_Function &function : (*functions))
+      for(ASM_Function &function : program->functions)
       {
         if(function.section_name() != ".text") continue;
 
@@ -60,7 +61,8 @@ namespace fault_injector
         {
           uint64_t adjusted_index = (*(function.non_directive_instruction_offsets()))[index];
           std::cout << "Injecting at " << std::dec << adjusted_index << " in fuction " << function.func_name() << std::endl;
-          counter += inject_fault(bitflips_per_instruction, &((*(function.instructions()))[adjusted_index]));
+          uint32_t crc_index = (*(function.instructions()))[adjusted_index].get_crc_index();
+          counter += inject_fault(bitflips_per_instruction, &((*(function.instructions()))[adjusted_index]), &program->crcs[crc_index]);
           break;
         }
         index -= function.num_non_directive_instruction_offsets();
